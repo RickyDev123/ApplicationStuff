@@ -1,0 +1,210 @@
+local ss = game:GetService("ServerStorage")
+local rs = game:GetService("ReplicatedStorage")
+
+local TrapList = ss.Traps:GetChildren()
+
+local LeftRooms = ss.LeftRooms:GetChildren()
+local RightRooms = ss.RightRooms:GetChildren()
+local RightStarts = ss.RightStarts:GetChildren()
+local LeftStarts = ss.LeftStarts:GetChildren()
+local RightEnds = ss.RightEnds:GetChildren()
+local LeftEnds = ss.LeftEnds:GetChildren()
+local DeathWall = ss.DeathWall
+
+
+local right
+local top = false
+local bottom = false
+local roomcount 
+local startpos
+local canplace = true
+
+
+local newRoom
+local tempNum
+local OldRoom
+local newDeathWall
+local tempTrap
+
+local AddVector
+local GenerateLevelEvent = rs.Events.GenerateLevel
+local positionToClientEvent = rs.Events.PositionToClient
+local stopStartEvent = rs.Events.TurnOffOn
+
+local function GenerateRooms(player)
+	
+	local folder = Instance.new("Folder")
+	local playernamestring = Instance.new("StringValue")
+	playernamestring.Name = "PlayerName"
+	print(player)
+	local plr = game.Players:FindFirstChild(player)
+	
+	local AddRoomAmount = plr:WaitForChild("Values"):WaitForChild("AddRooms")
+	local CurrentRooms = plr:WaitForChild("Values"):WaitForChild("CurrentRoomCount")
+	local gui = plr:WaitForChild("PlayerGui"):WaitForChild("Stats")
+	local gui2 = plr:WaitForChild("PlayerGui"):WaitForChild("InGameStuff")
+	
+	gui2.Enabled = true
+	gui.Enabled = false
+	roomcount = 10 + AddRoomAmount.Value
+	if roomcount >= 50 then
+		roomcount = 50
+		
+	else
+		AddRoomAmount.Value += 3
+	end
+	
+	CurrentRooms.Value = roomcount
+
+
+	local playerspawnpos = plr:FindFirstChild("SpawnPosition")
+	print(playerspawnpos.Value)
+	
+	folder.Name = player .. "Rooms"
+	
+	folder.Parent = workspace
+	playernamestring.Value = plr.Name
+	playernamestring.Name = "PlayerName"
+	playernamestring.Parent = folder
+	
+	AddVector = Vector3.new(playerspawnpos.Value.X,0,0)
+	print(AddVector)
+
+	startpos = CFrame.new(50,400,-155.75) - AddVector
+	
+	print(startpos)
+	
+	tempNum = math.random(1,2)
+	if tempNum == 1 then
+		right = true
+	else
+		right = false
+	end
+
+	for i = 1, roomcount do
+		canplace = true
+		if top == true then
+			
+			
+		end
+		if top == false then
+			
+			if right == true and canplace == true then
+				newRoom = RightStarts[math.random(1,#RightStarts)]
+				print(newRoom)
+				newRoom = newRoom:Clone()
+				newRoom.Parent = folder
+				newRoom:PivotTo(startpos)
+				newDeathWall = DeathWall:Clone()
+				OldRoom = newRoom
+				newDeathWall.Parent = folder
+				newDeathWall:PivotTo(OldRoom:FindFirstChild("TopPart").CFrame)
+			
+				positionToClientEvent:FireClient(plr, newRoom:FindFirstChild("TopPart").Position.Y, "Start")		
+				right = false
+				top = true
+				canplace = false
+				
+			end
+			if right == false and canplace == true then
+				newRoom = LeftStarts[math.random(1,#LeftStarts)]
+				print(newRoom)
+				newRoom = newRoom:Clone()
+				newRoom.Parent = folder
+				newRoom:PivotTo(startpos)
+				newDeathWall = DeathWall:Clone()
+				
+				OldRoom = newRoom
+				newDeathWall.Parent = folder
+				newDeathWall:PivotTo(OldRoom:FindFirstChild("TopPart").CFrame)
+				positionToClientEvent:FireClient(plr, newRoom:FindFirstChild("TopPart").Position.Y, "Start")
+				
+		
+				right = true
+				top = true
+				canplace = false
+				
+			end
+		end
+		
+		if top == true and bottom == false and i == roomcount then
+			if right == true and canplace == true then
+				newRoom = RightEnds[math.random(1,#RightEnds)]
+				newRoom = newRoom:Clone()
+				newRoom.Parent = folder
+				
+				newRoom:PivotTo(OldRoom:FindFirstChild("BottomPart").CFrame)
+				positionToClientEvent:FireClient(plr, newRoom:FindFirstChild("TopPart").Position.Y, "Finish")
+				stopStartEvent:FireClient(plr, "On")
+				right = false
+				bottom = false
+				canplace = false
+				top = false	
+			end
+			if right == false and canplace == true  then
+				newRoom = LeftEnds[math.random(1,#LeftEnds)]
+				newRoom = newRoom:Clone()
+				newRoom.Parent = folder
+			
+				newRoom:PivotTo(OldRoom:FindFirstChild("BottomPart").CFrame)
+				positionToClientEvent:FireClient(plr, newRoom:FindFirstChild("BottomPart").Position.Y, "Finish")
+				stopStartEvent:FireClient(plr, "On")
+				
+				right = true
+				bottom = false
+				canplace = false
+				top = false	
+			end
+			
+			
+		end
+		
+		if top == true and bottom == false then
+			if right == true and canplace == true then
+				newRoom = RightRooms[math.random(1,#RightRooms)]
+				newRoom = newRoom:Clone()
+				newRoom.Parent = folder
+				newRoom:PivotTo(OldRoom:FindFirstChild("BottomPart").CFrame)
+				right = false
+				canplace = false
+				OldRoom = newRoom
+			end
+			if right == false and canplace == true  then
+				newRoom = LeftRooms[math.random(1,#LeftRooms)]
+				newRoom = newRoom:Clone()
+				newRoom.Parent = folder
+				newRoom:PivotTo(OldRoom:FindFirstChild("BottomPart").CFrame)
+				right = true
+				canplace = false
+				OldRoom = newRoom
+			end
+		end
+		for i ,v in ipairs(newRoom:GetChildren()) do
+			if v.Name == "TrapPart" then
+				tempNum = math.random(1,4)
+				v.Transparency = 1
+				v.CanCollide = false
+				if tempNum >= 2 then
+					tempTrap = TrapList[math.random(1,#TrapList)]
+					tempTrap = tempTrap:Clone()
+					tempTrap.Parent = folder
+					tempTrap:PivotTo(v.CFrame)
+
+
+
+				end
+			end
+		end
+		
+	end
+	
+end
+
+GenerateLevelEvent.Event:Connect(function(player)
+	
+	
+	GenerateRooms(player)
+end)
+
+
+
